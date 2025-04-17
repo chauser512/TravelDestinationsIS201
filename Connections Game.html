@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Connections Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f2f5;
+      text-align: center;
+      padding: 40px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      font-size: 16px;
+      margin: 10px;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(4, 120px);
+      grid-gap: 15px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    .word {
+      background-color: #ffffff;
+      padding: 15px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .word.selected {
+      background-color: #d0ebff;
+      border-color: #0077cc;
+    }
+
+    .word.correct {
+      background-color: #b2f2bb;
+      border-color: #2f9e44;
+      color: #2f9e44;
+      cursor: default;
+    }
+
+    #message {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    #completedCategories {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Connections Game</h1>
+  <label for="difficulty">Choose difficulty:</label>
+  <select id="difficulty">
+    <option value="easy">Easy 🟢</option>
+    <option value="medium">Medium 🟡</option>
+    <option value="hard">Hard 🔴</option>
+  </select>
+  <button onclick="startGame()">Start Game</button>
+
+  <div id="grid"></div>
+  <button onclick="checkSelection()">Check</button>
+  <p id="message"></p>
+
+  <div id="completedCategories">
+    <h3>Found Categories:</h3>
+    <ul id="categoriesList"></ul>
+  </div>
+
+  <script>
+    const wordGroups = {
+      fruits: ["Apple", "Banana", "Mango", "Orange"],
+      colors: ["Blue", "Red", "Green", "Yellow"],
+      animals: ["Tiger", "Lion", "Elephant", "Zebra"],
+      countries: ["Japan", "Brazil", "Canada", "France"],
+      sports: ["Soccer", "Tennis", "Cricket", "Basketball"],
+      drinks: ["Coffee", "Tea", "Juice", "Soda"],
+      flowers: ["Rose", "Tulip", "Lily", "Daisy"],
+      instruments: ["Guitar", "Piano", "Drums", "Violin"],
+      desserts: ["Cake", "Pie", "Cookie", "Brownie"],
+      planets: ["Mars", "Venus", "Earth", "Jupiter"],
+      bodyParts: ["Arm", "Leg", "Head", "Foot"],
+      vehicles: ["Car", "Truck", "Bike", "Bus"],
+      programming: ["JavaScript", "Python", "Java", "Ruby"],
+      operatingSystems: ["Windows", "Linux", "macOS", "Android"],
+      socialMedia: ["Instagram", "Twitter", "Snapchat", "Facebook"],
+      tvShows: ["Friends", "Lost", "Sherlock", "Breaking Bad"],
+      cities: ["London", "Tokyo", "New York", "Dubai"],
+      weather: ["Rain", "Snow", "Sun", "Wind"],
+      occupations: ["Doctor", "Teacher", "Chef", "Pilot"],
+      shoes: ["Sneakers", "Boots", "Sandals", "Loafers"],
+      tools: ["Hammer", "Wrench", "Screwdriver", "Pliers"],
+      birds: ["Eagle", "Sparrow", "Owl", "Penguin"],
+      fish: ["Salmon", "Tuna", "Trout", "Bass"]
+    };
+
+    const fillerWords = ["Table", "Cloud", "Brick", "Shoe", "Window", "Phone", "Rocket", "Mouse", "Bread", "Moon"];
+
+    let selected = [];
+    let correctGroups = [];
+    let foundCategories = [];
+
+    function startGame() {
+      const difficulty = document.getElementById('difficulty').value;
+      const grid = document.getElementById('grid');
+      const message = document.getElementById('message');
+      const categoriesList = document.getElementById('categoriesList');
+      message.textContent = '';
+      categoriesList.innerHTML = '';
+      grid.innerHTML = '';
+      selected = [];
+      correctGroups = [];
+      foundCategories = [];
+
+      // Pick random groups based on difficulty
+      let groupCount = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 3 : 4;
+      let groups = Object.entries(wordGroups)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, groupCount);
+
+      // Save correct answers
+      correctGroups = groups.map(g => g[1]);
+
+      // Get all words from chosen groups
+      let allWords = groups.flatMap(g => g[1]);
+
+      // Add filler words if needed
+      let fillerCount = 16 - allWords.length;
+      if (fillerCount > 0) {
+        allWords = allWords.concat(fillerWords.sort(() => Math.random() - 0.5).slice(0, fillerCount));
+      }
+
+      // Shuffle
+      allWords = allWords.sort(() => Math.random() - 0.5);
+
+      // Create word buttons
+      allWords.forEach(word => {
+        const div = document.createElement('div');
+        div.textContent = word;
+        div.className = 'word';
+        div.onclick = () => toggleSelect(div);
+        grid.appendChild(div);
+      });
+    }
+
+    function toggleSelect(div) {
+      if (div.classList.contains('correct')) return;
+
+      if (div.classList.contains('selected')) {
+        div.classList.remove('selected');
+        selected = selected.filter(d => d !== div);
+      } else {
+        if (selected.length < 4) {
+          div.classList.add('selected');
+          selected.push(div);
+        }
+      }
+    }
+
+    function checkSelection() {
+      const message = document.getElementById('message');
+      const categoriesList = document.getElementById('categoriesList');
+
+      if (selected.length !== 4) {
+        message.textContent = "Select exactly 4 words!";
+        return;
+      }
+
+      const words = selected.map(d => d.textContent);
+      let matchFound = false;
+
+      for (let group of correctGroups) {
+        if (group.every(word => words.includes(word))) {
+          selected.forEach(d => {
+            d.classList.remove('selected');
+            d.classList.add('correct');
+          });
+
+          // Add completed category to list
+          const category = group.join(', ');
+          if (!foundCategories.includes(category)) {
+            foundCategories.push(category);
+            const li = document.createElement('li');
+            li.textContent = category;
+            categoriesList.appendChild(li);
+          }
+
+          correctGroups = correctGroups.filter(g => g !== group);
+          message.textContent = `✅ You found a group! ${group.join(', ')}`;
+          matchFound = true;
+          break;
+        }
+      }
+
+      if (!matchFound) {
+        message.textContent = "❌ Nope! Try again.";
+        selected.forEach(d => d.classList.remove('selected'));
+      }
+
+      selected = [];
+    }
+  </script>
+
+</body>
+</html>
